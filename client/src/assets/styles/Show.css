@@ -87,8 +87,8 @@
     }
   
     .grid-item {
-      min-width: 150px;
-      height: 300px;
+      max-width: 150px;
+      max-height: 300px;
     }
   }
 

@@ -154,13 +154,13 @@ const Show = ({ qRCodes, RemoveTask }) => {
 				centered>
 				<Modal.Header
 					closeButton
-					style={{ backgroundColor: "#7CFC00" }}
+					style={{ backgroundColor: "#00A86B" }}
 					className="d-flex justify-content-center"></Modal.Header>
-				<Modal.Body style={{ fontSize: "24px", backgroundColor: "#7CFC00" }}>
+				<Modal.Body style={{ fontSize: "24px", backgroundColor: "#00A86B" }}>
 					The QR Code {selectedQRCode.title} was deleted successfully!
 					<Check />
 				</Modal.Body>
-				<Modal.Footer style={{ backgroundColor: "#7CFC00" }}></Modal.Footer>
+				<Modal.Footer style={{ backgroundColor: "#00A86B" }}></Modal.Footer>
 			</Modal>
 		</Container>
 	);
