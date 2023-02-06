@@ -1,43 +1,26 @@
 import QRCode from "qrcode.react";
-import { useState } from "react";
 import { Alert, Button, Container, Form, Modal } from "react-bootstrap";
-import { insertQRCode } from "../api/qrcode";
 import {
 	ArrowLeftCircleFill,
 	Download,
 	Trash,
 	Check,
 } from "react-bootstrap-icons";
+import { Link } from "react-router-dom";
+import { useQrContext } from "../context/qr-context";
 
-const Generate = ({
-	showGenerateModal,
-	closeModalG,
-	getQRCodes,
-	handleRemoveTask,
-}) => {
-	const [qrCodeModal, setQRCodeModal] = useState(false);
-	const [title, setTitle] = useState("");
-	const [url, setUrl] = useState("");
-
-	const [deleteId, setDeleteId] = useState(null);
-	const [showDeleteModal, setShowDeleteModal] = useState(false);
-	const [showDeleteSuccessModal, setShowDeleteSuccessModal] = useState(false);
-
-	const [generatedQr, setGeneratedQr] = useState({});
-	const [errorMessage, setErrorMessage] = useState("");
-
-	const handleDelete = (qRCodeId) => {
-		setQRCodeModal(false);
-		setShowDeleteModal(true);
-		setDeleteId(qRCodeId);
-	};
-
-	const handleDeleteConfirm = () => {
-		handleRemoveTask(deleteId);
-		setShowDeleteModal(false);
-		setShowDeleteSuccessModal(true);
-		setQRCodeModal(false);
-	};
+const Generate = () => {
+	const {
+		state,
+		removeQr,
+		setGenerateModal,
+		handleNewQrUpdate,
+		addQrCode,
+		closeQrModal,
+		handleDeleteModalOpen,
+		setDeleteModal,
+		setDeleteSuccessModal,
+	} = useQrContext();
 
 	const downloadQRCode = () => {
 		const qrCodeUrl = document
@@ -53,11 +36,63 @@ const Generate = ({
 		document.body.removeChild(downloadLink);
 	};
 
-	const QRCodeModal = () => {
-		return (
+	return (
+		<Container>
+			{/* Generate New QR Modal */}
 			<Modal
-				show={qrCodeModal}
-				onHide={() => closeQRCModal()}
+				aria-labelledby="contained-modal-title-vcenter"
+				centered
+				show={state.showGenerateModal}
+				onHide={() => setGenerateModal(false)}>
+				<Modal.Header>
+					<Modal.Title>Generate new QR code</Modal.Title>
+				</Modal.Header>
+				<Modal.Body>
+					<Form>
+						<Form.Group className="mb-3">
+							<Form.Control
+								name="title"
+								type="text"
+								placeholder="QR Code Title"
+								autoFocus
+								value={state.newQr.title}
+								onChange={(e) => {
+									e.preventDefault();
+									handleNewQrUpdate(e.target.name, e.target.value);
+								}}></Form.Control>
+						</Form.Group>
+						<Form.Group className="mb-3">
+							<Form.Control
+								name="url"
+								as="textarea"
+								rows={3}
+								placeholder="Enter URL for your QR Code"
+								value={state.newQr.url}
+								onChange={(e) => {
+									e.preventDefault();
+									handleNewQrUpdate(e.target.name, e.target.value);
+								}}
+							/>
+						</Form.Group>
+					</Form>
+					{state.errorMessage.length > 0 ? (
+						<Alert variant="danger">{state.errorMessage}</Alert>
+					) : null}
+				</Modal.Body>
+				<Modal.Footer>
+					<Button variant="secondary" onClick={() => setGenerateModal(false)}>
+						Close
+					</Button>
+					<Button variant="primary" onClick={() => addQrCode()}>
+						Generate
+					</Button>
+				</Modal.Footer>
+			</Modal>
+
+			{/* Generated QR Code Modal */}
+			<Modal
+				show={state.showQrModal}
+				onHide={() => closeQrModal()}
 				aria-labelledby="contained-modal-title-vcenter"
 				centered>
 				<Modal.Header className="d-flex justify-content-center">
@@ -65,125 +100,52 @@ const Generate = ({
 				</Modal.Header>
 				<Modal.Body className="text-center">
 					<Modal.Title>
-						{JSON.stringify(generatedQr) !== "{}" ? generatedQr.title : ""}
+						{JSON.stringify(state.generatedQr) !== "{}"
+							? state.generatedQr.title
+							: ""}
 					</Modal.Title>
 					<QRCode
 						size={200}
-						value={JSON.stringify(generatedQr) !== "{}" ? generatedQr.url : ""}
+						value={
+							JSON.stringify(state.generatedQr) !== "{}"
+								? state.generatedQr.url
+								: ""
+						}
 						id="qrcode_image"
 					/>
 				</Modal.Body>
 				<Modal.Footer className="d-flex justify-content-center">
-					<Button onClick={() => setQRCodeModal(false)}>
-						<ArrowLeftCircleFill />
-					</Button>
+					<Link to="/show">
+						<Button onClick={() => closeQrModal()}>
+							<ArrowLeftCircleFill />
+						</Button>
+					</Link>
 					<Button variant="success" onClick={() => downloadQRCode()}>
 						<Download />
 					</Button>
-					<Button
-						variant="danger"
-						onClick={() =>
-							handleDelete(
-								JSON.stringify(generatedQr) !== "{}" ? generatedQr._id : ""
-							)
-						}>
+					<Button variant="danger" onClick={() => handleDeleteModalOpen()}>
 						<Trash />
 					</Button>
 				</Modal.Footer>
 			</Modal>
-		);
-	};
 
-	const closeQRCModal = () => {
-		setQRCodeModal(false);
-		setGeneratedQr({});
-	};
-
-	const generateQRCode = () => {
-		setErrorMessage("");
-
-		insertQRCode(title, url)
-			.then((response) => {
-				setQRCodeModal(true);
-				closeModalG();
-				setGeneratedQr(response.data);
-				setTitle("");
-				setUrl("");
-				getQRCodes();
-			})
-			.catch((error) => {
-				setErrorMessage(
-					"Title and/or URL already exist in database. Try again"
-				);
-
-				setGeneratedQr({});
-				console.log(error);
-				setTitle("");
-				setUrl("");
-			});
-	};
-	return (
-		<Container>
+			{/* Delete Prompt Modal */}
 			<Modal
-				aria-labelledby="contained-modal-title-vcenter"
-				centered
-				show={showGenerateModal}
-				onHide={closeModalG}>
-				<Modal.Header>
-					<Modal.Title>Generate my QR code</Modal.Title>
-				</Modal.Header>
-				<Modal.Body>
-					<Form>
-						<Form.Group className="mb-3">
-							<Form.Control
-								type="text"
-								placeholder="QR Code Title"
-								autoFocus
-								value={title}
-								onChange={(e) => setTitle(e.target.value)}></Form.Control>
-						</Form.Group>
-						<Form.Group className="mb-3">
-							<Form.Control
-								as="textarea"
-								rows={3}
-								placeholder="Enter URL for your QR Code"
-								value={url}
-								onChange={(e) => setUrl(e.target.value)}
-							/>
-						</Form.Group>
-					</Form>
-					{errorMessage.length > 0 ? (
-						<Alert variant="danger">{errorMessage}</Alert>
-					) : null}
-				</Modal.Body>
-				<Modal.Footer>
-					<Button variant="secondary" onClick={closeModalG}>
-						Close
-					</Button>
-					<Button variant="primary" onClick={() => generateQRCode()}>
-						Generate
-					</Button>
-				</Modal.Footer>
-			</Modal>
-			<QRCodeModal />
-
-			{/* Delete Confirmation Modal */}
-			<Modal
-				show={showDeleteModal}
-				onHide={() => setShowDeleteModal(false)}
+				show={state.showDeleteModal}
+				onHide={() => setDeleteModal(false)}
 				aria-labelledby="contained-modal-title-vcenter"
 				centered>
 				<Modal.Header closeButton>
 					<Modal.Title>Confirm Delete</Modal.Title>
 				</Modal.Header>
 				<Modal.Body>
-					Are you sure you want to delete -{generatedQr.title}- QR code?
+					Are you sure you want to delete "{state.generatedQr.title}" QR code?
 				</Modal.Body>
 				<Modal.Footer>
-					<Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+					<Button variant="secondary" onClick={() => setDeleteModal(false)}>
 						Cancel
 					</Button>
-					<Button variant="danger" onClick={() => handleDeleteConfirm()}>
+					<Button variant="danger" onClick={() => removeQr()}>
 						OK
 					</Button>
 				</Modal.Footer>
@@ -191,8 +153,8 @@ const Generate = ({
 
 			{/* Delete Success Modal */}
 			<Modal
-				show={showDeleteSuccessModal}
-				onHide={() => setShowDeleteSuccessModal(false)}
+				show={state.showDeleteSuccessModal}
+				onHide={() => setDeleteSuccessModal(false)}
 				aria-labelledby="contained-modal-title-vcenter"
 				centered>
 				<Modal.Header
@@ -205,7 +167,7 @@ const Generate = ({
 						backgroundColor: "#00A86B",
 						textAlign: "center",
 					}}>
-					The QR Code {generatedQr.title} was deleted successfully!
+					The QR Code {state.generatedQr.title} was deleted successfully!
 					<Check size={40} />
 				</Modal.Body>
 				<Modal.Footer style={{ backgroundColor: "#00A86B" }}></Modal.Footer>
