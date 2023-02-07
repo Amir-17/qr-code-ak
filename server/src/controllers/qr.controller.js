@@ -9,6 +9,9 @@ const getHome = async (req, res) => {
 };
 
 const generateQRCode = async (req, res) => {
+	let regex = new RegExp (/((?:(?:http?|ftp)[s]*:\/\/)?[a-z0-9-%\/\&=?\.]+\.[a-z]{2,4}\/?([^\s<>\#%"\,\{\}\\|\\\^\[\]`]+)?)/gi)
+
+	if (regex.test(req.body.url)) {
 	QRCode.toDataURL(req.body.url).then((response) => {
 		const qrcode = Qrc({
 			title: req.body.title,
@@ -21,7 +24,9 @@ const generateQRCode = async (req, res) => {
 			}
 			res.status(201).json(data);
 		});
-	});
+	})} else {
+		return res.status(400).json(`${req.body.url} is not a valid URL!`)
+	}
 };
 
 const getQRCodes = (req, res) => {

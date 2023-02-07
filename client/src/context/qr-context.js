@@ -64,7 +64,12 @@ const QrProvider = ({ children }) => {
 	};
 
 	const setGenerateModal = (value) => {
-		setState({ ...state, showGenerateModal: value });
+		setState({ 
+			...state, 
+			showGenerateModal: value, 
+			newQr : {title: "", url:""}, 
+			errorMessage:"", 
+		});
 	};
 
 	const closeGeneratedQrModal = () => {
@@ -125,8 +130,7 @@ const QrProvider = ({ children }) => {
 					...state,
 					generatedQr: {},
 					newQr: { title: "", url: "" },
-					errorMessage:
-						"Could not create new QR. Please check your title and url, and try again!",
+					errorMessage:`${error.response.data}`,
 				});
 			});
 	};
