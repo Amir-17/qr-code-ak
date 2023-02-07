@@ -1,36 +1,43 @@
 import _ from "lodash";
-import QRCode from "../models/qr.model";
+import Qrc from "../models/qr.model";
+import QRCode from "qrcode";
 
 const getHome = async (req, res) => {
-	QRCode.find()
+	Qrc.find()
 		.then((qrCodes) => res.render("qrCodeHome", { qrCodes }))
 		.catch((err) => res.status(400).json(err));
 };
 
 const generateQRCode = async (req, res) => {
-	const qrcode = QRCode(req.body);
+	QRCode.toDataURL(req.body.url).then((response) => {
+		const qrcode = Qrc({
+			title: req.body.title,
+			url: response.split(",")[1],
+		});
 
-	qrcode.save((err, data) => {
-		if (err) {
-			return res.status(400).json(err.message);
-		}
-		res.status(201).json(data);
+		qrcode.save((err, data) => {
+			if (err) {
+				return res.status(400).json(err.message);
+			}
+			res.status(201).json(data);
+		});
 	});
 };
 
-const getQRCodes = async (req, res) => {
-	QRCode.find((err, data) => {
+const getQRCodes = (req, res) => {
+	Qrc.find((err, docs) => {
 		if (err) {
 			return res.status(400).json(err.message);
 		}
-		res.status(201).json(data);
+
+		res.status(201).json(docs);
 	});
 };
 
 const searchQrCodes = (req, res) => {
 	const queryString = req.query.q;
 
-	QRCode.find({ title: { $regex: queryString } }, (err, data) => {
+	Qrc.find({ title: { $regex: queryString } }, (err, data) => {
 		if (err) {
 			return res.status(400).json(err.message);
 		}
@@ -40,7 +47,7 @@ const searchQrCodes = (req, res) => {
 
 const getQRCode = async (req, res) => {
 	const id = req.params.id;
-	QRCode.findById(id).exec((err, data) => {
+	Qrc.findById(id).exec((err, data) => {
 		if (err || !data) {
 			return res.status(400).json("QR Code not found!");
 		}
@@ -50,7 +57,7 @@ const getQRCode = async (req, res) => {
 
 const deleteQRCode = async (req, res) => {
 	const id = req.params.id;
-	QRCode.findById(id).exec((err, data) => {
+	Qrc.findById(id).exec((err, data) => {
 		if (err || !data) {
 			return res.status(400).json("QR Code not found");
 		}

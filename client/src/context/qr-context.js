@@ -1,9 +1,8 @@
 import {
 	insertQRCode,
 	removeQRCode,
-	searchQRCode,
-	getAllQRCodes,
 	searchQRCodes,
+	getAllQRCodes,
 } from "../api/qrcode";
 import React, { createContext, useContext, useState } from "react";
 
@@ -19,41 +18,36 @@ const QrProvider = ({ children }) => {
 		errorMessage: "",
 		showInfoModal: false,
 		showGenerateModal: false,
+		showGeneratedQrModal: false,
+		showGeneratedDeleteModal: false,
+		showGeneratedDeleteSuccessModal: false,
 		showQrModal: false,
 		showDeleteModal: false,
 		showDeleteSuccessModal: false,
+		showDeleteLocation: "",
+		cardDeleteId: "",
 	});
 
-	const closeInfoModal = () => {
-		setState({ ...state, showInfoModal: false });
-	};
+	// console.log(state);
 
-	const setQrModal = (value) => {
-		setState({ ...state, showQrModal: value });
+	// methods for handling modals in the Show component
+	const openQrModal = (qr) => {
+		setState({ ...state, showQrModal: true, selectedQr: qr });
 	};
 
 	const closeQrModal = () => {
-		setState({ ...state, showQrModal: false, generatedQr: {} });
+		setState({ ...state, showQrModal: false, selectedQr: {} });
 	};
 
-	const setSelectedQr = (qr) => {
-		setState({ ...state, selectedQr: qr });
-	};
-
-	const setGenerateModal = (value) => {
-		setState({ ...state, showGenerateModal: value });
-	};
-
-	const setSearchQuery = (value) => {
-		setState({ ...state, searchQuery: value });
-	};
-
-	const handleNewQrUpdate = (name, value) => {
-		setState({ ...state, newQr: { ...state.newQr, [name]: value } });
-	};
-
-	const handleDeleteModalOpen = () => {
-		setState({ ...state, showQrModal: false, showDeleteModal: true });
+	const handleDeleteModalOpen = (location, deleteId) => {
+		setState({
+			...state,
+			showQrModal: false,
+			showDeleteModal: true,
+			showDeleteLocation: location,
+			cardDeleteId: deleteId,
+			showInfoModal: false,
+		});
 	};
 
 	const setDeleteModal = (value) => {
@@ -64,6 +58,53 @@ const QrProvider = ({ children }) => {
 		setState({ ...state, showDeleteSuccessModal: value });
 	};
 
+	// methods for handling modals in the Generate component
+	const handleNewQrUpdate = (name, value) => {
+		setState({ ...state, newQr: { ...state.newQr, [name]: value } });
+	};
+
+	const setGenerateModal = (value) => {
+		setState({ ...state, showGenerateModal: value });
+	};
+
+	const closeGeneratedQrModal = () => {
+		setState({ ...state, showGeneratedQrModal: false, generatedQr: {} });
+	};
+
+	const handleGeneratedDeleteModalOpen = () => {
+		setState({
+			...state,
+			showGeneratedQrModal: false,
+			showGeneratedDeleteModal: true,
+		});
+	};
+
+	const setGeneratedDeleteModal = (value) => {
+		setState({ ...state, showGeneratedDeleteModal: value });
+	};
+
+	const setGeneratedDeleteSuccessModal = (value) => {
+		setState({ ...state, showGeneratedDeleteSuccessModal: value });
+	};
+
+	// other methods
+	const closeInfoModal = () => {
+		setState({ ...state, showInfoModal: false });
+	};
+
+	const setQrModal = (value) => {
+		setState({ ...state, showGeneratedQrModal: value });
+	};
+
+	const setSelectedQr = (qr) => {
+		setState({ ...state, selectedQr: qr });
+	};
+
+	const setSearchQuery = (value) => {
+		setState({ ...state, searchQuery: value });
+	};
+
+	// api methods
 	const addQrCode = () => {
 		insertQRCode(state.newQr.title, state.newQr.url)
 			.then((response) => {
@@ -72,30 +113,36 @@ const QrProvider = ({ children }) => {
 					newQr: { title: "", url: "" },
 					generatedQr: response.data,
 					showGenerateModal: false,
-					showQrModal: true,
+					showGeneratedQrModal: true,
 					errorMessage: "",
 				});
 				console.log("New QR Code added successfuly!");
 			})
 			.then(() => {})
 			.catch((error) => {
-				console.log(error.message);
+				console.log(error);
 				setState({
 					...state,
 					generatedQr: {},
 					newQr: { title: "", url: "" },
 					errorMessage:
-						"Title and/or URL already exist in database. Try again!",
+						"Could not create new QR. Please check your title and url, and try again!",
 				});
 			});
 	};
+
+	// console.log(state.allQrCodes);
 
 	const getQrCodes = () => {
 		if (state.searchQuery === "" || state.searchQuery === undefined) {
 			getAllQRCodes()
 				.then((response) => {
 					if (response.data.length === 0) {
-						setState({ ...state, showInfoModal: true });
+						setState({
+							...state,
+							allQrCodes: response.data,
+							showInfoModal: true,
+						});
 					} else {
 						setState({
 							...state,
@@ -124,64 +171,86 @@ const QrProvider = ({ children }) => {
 			.catch((error) => console.log(error.message));
 	};
 
-	const removeQr = (id) => {
+	const removeQr = () => {
 		removeQRCode(
-			JSON.stringify(state.generatedQr) != "{}"
+			JSON.stringify(state.generatedQr) !== "{}"
 				? state.generatedQr._id
-				: JSON.stringify(state.selectedQr) != "{}"
+				: state.showDeleteLocation === "MODAL"
 				? state.selectedQr._id
-				: id
+				: state.cardDeleteId
 		)
 			.then(() => {
-				setState({
-					...state,
-					showDeleteModal: false,
-					showDeleteSuccessModal: true,
-					showQrModal: false,
-					generatedQr: {},
-				});
+				JSON.stringify(state.generatedQr) !== "{}"
+					? setState({
+							...state,
+							showGeneratedDeleteModal: false,
+							showGeneratedDeleteSuccessModal: true,
+							showGeneratedQrModal: false,
+							generatedQr: {},
+					  })
+					: setState({
+							...state,
+							selectedQr: {},
+							showDeleteModal: false,
+							showDeleteSuccessModal: true,
+							showQrModal: false,
+							cardDeleteId: "",
+							showDeleteLocation: "",
+					  });
 				console.log(
 					`QR Code with id ${
-						JSON.stringify(state.generatedQr) != "{}"
+						JSON.stringify(state.generatedQr) !== "{}"
 							? state.generatedQr._id
-							: id
+							: state.showDeleteLocation === "MODAL"
+							? state.selectedQr._id
+							: state.cardDeleteId
 					} successfuly deleted!`
 				);
 			})
 			.catch((error) => {
+				console.log(error);
 				console.log(
 					`Could not delete code with id ${
-						JSON.stringify(state.generatedQr) != "{}"
+						JSON.stringify(state.generatedQr) !== "{}"
 							? state.generatedQr._id
-							: id
+							: state.showDeleteLocation === "MODAL"
+							? state.selectedQr._id
+							: state.cardDeleteId
 					}. Error ${error.message}`
 				);
 			});
 	};
 
+	// export values for context provider
 	const value = {
 		state,
 		removeQr,
 		addQrCode,
 		setQrModal,
 		getQrCodes,
-		closeQrModal,
+		closeGeneratedQrModal,
 		searchQrCodes,
 		setSelectedQr,
 		setSearchQuery,
-		setDeleteModal,
 		closeInfoModal,
 		setGenerateModal,
-		handleDeleteModalOpen,
 		handleNewQrUpdate,
+		handleGeneratedDeleteModalOpen,
+		setGeneratedDeleteModal,
+		setGeneratedDeleteSuccessModal,
+		openQrModal,
+		closeQrModal,
+		handleDeleteModalOpen,
+		setDeleteModal,
 		setDeleteSuccessModal,
 	};
-	return <QrContext.Provider value={value}> {children}</QrContext.Provider>;
+
+	return <QrContext.Provider value={value}>{children}</QrContext.Provider>;
 };
 
 const useQrContext = () => {
 	const context = useContext(QrContext);
-	if (context == undefined) {
+	if (context === undefined) {
 		throw new Error("useQrContext must be used within a QrProvider");
 	}
 	return context;

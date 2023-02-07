@@ -1,50 +1,42 @@
-import QRCode from "qrcode.react";
-import React, { useEffect } from "react";
-import { useState } from "react";
-import { Card, Button, Container, ButtonGroup, Modal } from "react-bootstrap";
 import {
-	ArrowLeftCircleFill,
-	Download,
 	Trash,
 	Phone,
 	Check,
+	Download,
+	ArrowLeftCircleFill,
 } from "react-bootstrap-icons";
 import "../assets/styles/Show.css";
+import React, { useEffect } from "react";
 import { useQrContext } from "../context/qr-context";
+import {
+	Card,
+	Button,
+	Container,
+	ButtonGroup,
+	Modal,
+	Image,
+} from "react-bootstrap";
 
 const Show = () => {
+	//new states and methods with context api
 	const {
 		state,
-		getQrCodes,
 		removeQr,
+		getQrCodes,
+		openQrModal,
+		closeQrModal,
 		closeInfoModal,
-		setSelectedQr,
+		setDeleteModal,
 		handleDeleteModalOpen,
 		setDeleteSuccessModal,
-		setDeleteModal,
 	} = useQrContext();
 
 	useEffect(() => {
 		getQrCodes();
-	}, [state.searchQuery, state.generatedQr]);
-
-	const [deleteId, setDeleteId] = useState(null);
-	const [showModal, setShowModal] = useState(false);
-
-	const openModal = (qrCode) => {
-		setSelectedQr(qrCode);
-		setShowModal(true);
-	};
-
-	const closeModal = () => {
-		setShowModal(false);
-	};
+	}, [state.searchQuery, state.generatedQr, state.showDeleteLocation]);
 
 	const downloadQRCode = () => {
-		const qrCodeUrl = document
-			.getElementById("show_qrcode_image")
-			.toDataURL("image/png")
-			.replace("image/png", "image/octet-stream");
+		const qrCodeUrl = document.getElementById("show_qrcode_image").src;
 
 		let downloadLink = document.createElement("a");
 		downloadLink.href = qrCodeUrl;
@@ -65,22 +57,24 @@ const Show = () => {
 									</Card.Title>
 								</Card.Header>
 								<Card.Body className="text-center">
-									<QRCode size={100} value={qrCode.url} />
+									<Image
+										id="show_qrcode_image"
+										src={`data:image/png;base64,${qrCode.url}`}
+									/>
 								</Card.Body>
 								<Card.Footer className="d-flex justify-content-center">
 									<ButtonGroup>
 										<Button
 											variant="primary"
 											className="ml-2"
-											onClick={() => openModal(qrCode)}>
+											onClick={() => openQrModal(qrCode)}>
 											<Phone />
 										</Button>
 										<Button
 											variant="danger"
 											className="ml-2"
 											onClick={() => {
-												setDeleteId(qrCode._id);
-												handleDeleteModalOpen();
+												handleDeleteModalOpen("CARD", qrCode._id);
 											}}>
 											<Trash />
 										</Button>
@@ -93,8 +87,8 @@ const Show = () => {
 
 			{/* Single QR Code Modal */}
 			<Modal
-				show={showModal}
-				onHide={closeModal}
+				show={state.showQrModal}
+				onHide={() => closeQrModal()}
 				aria-labelledby="contained-modal-title-vcenter"
 				centered>
 				<Modal.Header className="d-flex justify-content-center">
@@ -102,15 +96,10 @@ const Show = () => {
 				</Modal.Header>
 				<Modal.Body className="text-center">
 					<Modal.Title>{state.selectedQr.title}</Modal.Title>
-					<QRCode
-						size={200}
-						value={state.selectedQr.url}
-						id="show_qrcode_image"
-					/>
+					<Image src={`data:image/png;base64,${state.selectedQr.url}`} />
 				</Modal.Body>
 				<Modal.Footer className="d-flex justify-content-center">
-					{/* <Link to="/show"></Link> */}
-					<Button onClick={closeModal}>
+					<Button onClick={() => closeQrModal()}>
 						<ArrowLeftCircleFill />
 					</Button>
 					<Button
@@ -122,8 +111,7 @@ const Show = () => {
 					<Button
 						variant="danger"
 						onClick={() => {
-							setDeleteId(state.selectedQr._id);
-							handleDeleteModalOpen();
+							handleDeleteModalOpen("MODAL", "");
 						}}>
 						<Trash />
 					</Button>
@@ -140,7 +128,11 @@ const Show = () => {
 					<Modal.Title>Confirm Delete</Modal.Title>
 				</Modal.Header>
 				<Modal.Body>
-					Are you sure you want to delete "{state.selectedQr.title}" QR code?
+					Are you sure you want to delete "
+					{state.cardDeleteId === ""
+						? state.selectedQr.title
+						: state.allQrCodes.find((x) => x._id === state.cardDeleteId).title}
+					" QR code?
 				</Modal.Body>
 				<Modal.Footer>
 					<Button variant="secondary" onClick={() => setDeleteModal(false)}>
@@ -149,8 +141,7 @@ const Show = () => {
 					<Button
 						variant="danger"
 						onClick={() => {
-							removeQr(deleteId);
-							setDeleteId(null);
+							removeQr();
 						}}>
 						OK
 					</Button>
@@ -181,7 +172,7 @@ const Show = () => {
 
 			{/* No QR Codes in database Modal */}
 			<Modal
-				show={state.showInfoModal}
+				show={!state.showDeleteSuccessModal && state.showInfoModal}
 				onHide={() => closeInfoModal()}
 				centered>
 				<Modal.Header closeButton></Modal.Header>

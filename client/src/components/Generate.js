@@ -1,32 +1,30 @@
-import QRCode from "qrcode.react";
-import { Alert, Button, Container, Form, Modal } from "react-bootstrap";
 import {
-	ArrowLeftCircleFill,
-	Download,
 	Trash,
 	Check,
+	Download,
+	ArrowLeftCircleFill,
 } from "react-bootstrap-icons";
+import QRCode from "qrcode.react";
 import { Link } from "react-router-dom";
 import { useQrContext } from "../context/qr-context";
+import { Alert, Button, Container, Form, Image, Modal } from "react-bootstrap";
 
 const Generate = () => {
+	//new states and methods using Context API
 	const {
 		state,
 		removeQr,
 		setGenerateModal,
 		handleNewQrUpdate,
 		addQrCode,
-		closeQrModal,
-		handleDeleteModalOpen,
-		setDeleteModal,
-		setDeleteSuccessModal,
+		closeGeneratedQrModal,
+		handleGeneratedDeleteModalOpen,
+		setGeneratedDeleteModal,
+		setGeneratedDeleteSuccessModal,
 	} = useQrContext();
 
 	const downloadQRCode = () => {
-		const qrCodeUrl = document
-			.getElementById("qrcode_image")
-			.toDataURL("image/png")
-			.replace("image/png", "image/octet-stream");
+		const qrCodeUrl = document.getElementById("qrcode_image").src;
 
 		let downloadLink = document.createElement("a");
 		downloadLink.href = qrCodeUrl;
@@ -91,8 +89,8 @@ const Generate = () => {
 
 			{/* Generated QR Code Modal */}
 			<Modal
-				show={state.showQrModal}
-				onHide={() => closeQrModal()}
+				show={state.showGeneratedQrModal}
+				onHide={() => closeGeneratedQrModal()}
 				aria-labelledby="contained-modal-title-vcenter"
 				centered>
 				<Modal.Header className="d-flex justify-content-center">
@@ -104,26 +102,24 @@ const Generate = () => {
 							? state.generatedQr.title
 							: ""}
 					</Modal.Title>
-					<QRCode
-						size={200}
-						value={
-							JSON.stringify(state.generatedQr) !== "{}"
-								? state.generatedQr.url
-								: ""
-						}
+					<Image
+						style={{ width: "200px", height: "200px" }}
 						id="qrcode_image"
+						src={`data:image/png;base64,${state.generatedQr.url}`}
 					/>
 				</Modal.Body>
 				<Modal.Footer className="d-flex justify-content-center">
 					<Link to="/show">
-						<Button onClick={() => closeQrModal()}>
+						<Button onClick={() => closeGeneratedQrModal()}>
 							<ArrowLeftCircleFill />
 						</Button>
 					</Link>
 					<Button variant="success" onClick={() => downloadQRCode()}>
 						<Download />
 					</Button>
-					<Button variant="danger" onClick={() => handleDeleteModalOpen()}>
+					<Button
+						variant="danger"
+						onClick={() => handleGeneratedDeleteModalOpen()}>
 						<Trash />
 					</Button>
 				</Modal.Footer>
@@ -131,8 +127,8 @@ const Generate = () => {
 
 			{/* Delete Prompt Modal */}
 			<Modal
-				show={state.showDeleteModal}
-				onHide={() => setDeleteModal(false)}
+				show={state.showGeneratedDeleteModal}
+				onHide={() => setGeneratedDeleteModal(false)}
 				aria-labelledby="contained-modal-title-vcenter"
 				centered>
 				<Modal.Header closeButton>
@@ -142,7 +138,9 @@ const Generate = () => {
 					Are you sure you want to delete "{state.generatedQr.title}" QR code?
 				</Modal.Body>
 				<Modal.Footer>
-					<Button variant="secondary" onClick={() => setDeleteModal(false)}>
+					<Button
+						variant="secondary"
+						onClick={() => setGeneratedDeleteModal(false)}>
 						Cancel
 					</Button>
 					<Button variant="danger" onClick={() => removeQr()}>
@@ -153,8 +151,8 @@ const Generate = () => {
 
 			{/* Delete Success Modal */}
 			<Modal
-				show={state.showDeleteSuccessModal}
-				onHide={() => setDeleteSuccessModal(false)}
+				show={state.showGeneratedDeleteSuccessModal}
+				onHide={() => setGeneratedDeleteSuccessModal(false)}
 				aria-labelledby="contained-modal-title-vcenter"
 				centered>
 				<Modal.Header
